@@ -17,13 +17,23 @@ const foods={
 };
 export const nutrientKeys=['kcal','protein','fat','carbs'];
 export function validNutrition(n){return !!n&&Number.isFinite(n.kcal)&&n.kcal>=0&&n.kcal<=20000&&nutrientKeys.slice(1).every(k=>n[k]===null||(Number.isFinite(n[k])&&n[k]>=0&&n[k]<=2000))&&typeof n.estimated==='boolean';}
-export function recipeNutrition(r){
- if(r.nutrition)return r.nutrition;
- const sum=[0,0,0,0];
- for(const i of r.ingredients){const row=foods[i.name];if(!row||!['г','мл','шт'].includes(i.unit)||i.unit==='шт'&&i.name!=='Яйца'||i.name==='Яйца'&&i.unit!=='шт')return null;const factor=i.qty/(i.unit==='шт'?1:100);row.forEach((v,n)=>sum[n]+=v*factor);}
- return Object.fromEntries([...nutrientKeys.map((k,n)=>[k,Math.round(sum[n]*10)/10]),['estimated',true]]);
+export function recipeNutrition(r,products=[]){
+ if(!r)return null;if(r.nutrition)return r.nutrition;
+ const sum={kcal:0,protein:0,fat:0,carbs:0},normalize=x=>x.trim().toLocaleLowerCase('ru');let estimated=false;
+ for(const i of r.ingredients){
+  const matches=products.filter(p=>p.basis==='100'&&(p.unit||'г')===i.unit&&normalize(p.ingredientName||p.name)===normalize(i.name));
+  if(matches.length>1)return null;
+  let n,factor;if(matches.length){n=matches[0].nutrition;factor=i.qty/100;}else{
+   const row=Object.hasOwn(foods,i.name)?foods[i.name]:null;
+   if(!row||!['г','мл','шт'].includes(i.unit)||i.unit==='шт'&&i.name!=='Яйца'||i.name==='Яйца'&&i.unit!=='шт')return null;
+   n=Object.fromEntries(nutrientKeys.map((k,j)=>[k,row[j]]));n.estimated=true;factor=i.qty/(i.unit==='шт'?1:100);
+  }
+  estimated ||= n.estimated;
+  for(const k of nutrientKeys)sum[k]=sum[k]===null||n[k]===null?null:sum[k]+n[k]*factor;
+ }
+ return {...Object.fromEntries(nutrientKeys.map(k=>[k,sum[k]===null?null:Math.round(sum[k]*10)/10])),estimated};
 }
 export function scaleNutrition(n,servings=1){return n?{...Object.fromEntries(nutrientKeys.map(k=>[k,n[k]===null?null:Math.round(n[k]*servings*10)/10])),estimated:n.estimated}:null;}
 export function sumNutrition(items){const total={kcal:0,protein:0,fat:0,carbs:0,unknown:0,partial:false};for(const n of items){if(!n){total.unknown++;continue;}for(const k of nutrientKeys){if(n[k]===null)total.partial=true;else total[k]+=n[k];}}return total;}
 export function validFoodLog(log){return Array.isArray(log)&&log.length<=10000&&new Set(log.map(x=>x.id)).size===log.length&&log.every(x=>typeof x.id==='string'&&x.id.length<=100&&typeof x.name==='string'&&x.name.length>0&&x.name.length<=100&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Number.isFinite(x.servings)&&x.servings>0&&x.servings<=100&&(x.nutrition===null||validNutrition(x.nutrition))&&(!x.mealId||typeof x.mealId==='string'&&x.mealId.length<=100));}
-export function validSavedFoods(list){return Array.isArray(list)&&list.length<=1000&&new Set(list.map(x=>x.id)).size===list.length&&list.every(x=>typeof x.id==='string'&&x.id.length>0&&x.id.length<=100&&typeof x.name==='string'&&x.name.length>0&&x.name.length<=100&&['portion','100'].includes(x.basis)&&validNutrition(x.nutrition));}
+export function validSavedFoods(list){return Array.isArray(list)&&list.length<=1000&&new Set(list.map(x=>x.id)).size===list.length&&list.every(x=>typeof x.id==='string'&&x.id.length>0&&x.id.length<=100&&typeof x.name==='string'&&x.name.length>0&&x.name.length<=100&&['portion','100'].includes(x.basis)&&(!x.unit||['г','мл'].includes(x.unit))&&(x.ingredientName===undefined||typeof x.ingredientName==='string'&&x.ingredientName.length<=100)&&validNutrition(x.nutrition));}
