@@ -14,5 +14,5 @@ recipe('saved-pancake-bowl','Протеиновый панкейк в конте
 
 ];
 
-const reelPhotos={"saved-coffee-syrniki": "reel-syrniki", "saved-pancake-bowl": "reel-pancake-bowl", "saved-turkish-eggs": "reel-turkish-eggs", "saved-caesar": "reel-caesar", "saved-ribs-potato": "reel-ribs", "saved-paprika-chicken": "reel-paprika-chicken", "saved-chicken-mushroom": "reel-chicken-mushroom"};
+const reelPhotos={"saved-thigh-rice":"reel-web-saved-thigh-rice","saved-beef-parmesan":"reel-web-saved-beef-parmesan","saved-coffee-syrniki": "reel-syrniki", "saved-pancake-bowl": "reel-pancake-bowl", "saved-turkish-eggs": "reel-turkish-eggs", "saved-caesar": "reel-caesar", "saved-ribs-potato": "reel-ribs", "saved-paprika-chicken": "reel-paprika-chicken", "saved-chicken-mushroom": "reel-chicken-mushroom"};
 export const savedRecipes=savedRecipeRows.map(r=>reelPhotos[r.id]?{...r,image:reelPhotos[r.id],tags:r.tags.filter(t=>t!=='Нужно фото')}:r);
